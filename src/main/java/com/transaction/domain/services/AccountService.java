@@ -13,14 +13,18 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
+import static com.transaction.domain.util.AssociateWordsWithMccUtil.getMcc;
+
 @Service
 public class AccountService {
 
     private final AccountBankRepository accountBankRepository;
+    private final MCCIdentifyService mccIdentifyService;
 
     @Autowired
-    public AccountService(AccountBankRepository accountBankRepository) {
+    public AccountService(AccountBankRepository accountBankRepository, MCCIdentifyService mccIdentifyService) {
         this.accountBankRepository = accountBankRepository;
+        this.mccIdentifyService = mccIdentifyService;
     }
 
     public void save(List<AccountBank> accountBank) {
@@ -30,39 +34,57 @@ public class AccountService {
     @SneakyThrows
     public void subtractBalance(Transaction transaction) {
 
-        var accountList = accountBankRepository.findByAccountNumberAndMccLike(transaction.getAccount(), transaction.getMcc());
+        var mcc = mccIdentifyService.verifyMccByName(transaction);
+
+        var accountList = accountBankRepository.findByAccountNumberAndMccLike(transaction.getAccount(), mcc);
 
         if (Objects.isNull(accountList) || accountList.isEmpty()) {
-            //TODO: VERIFICAR VALIDACAO DE MCC APARTIR DO NOME DO ESTABELECIMENTO
-            //TODO: CRIAR ALGO PARA TRABALHAR COM CONCORRENCIA SE DUAS PESSOAS PASSAREM O CARTÃO AO MESMO TEMPO
-            //TODO: Criar um código especifico para conta inexistente
             throw new TransactionException(CodeReturnEnum.NO_EXIST_ACCOUNT);
         }
 
         var accountMccTransaction = accountList
-                                        .stream()
-                                        .filter(acc -> filterMcc(acc.getMcc(), transaction.getMcc()))
-                                        .findFirst();
+                .stream()
+                .filter(acc -> filterMcc(acc.getMcc(), transaction.getMcc()))
+                .findFirst();
 
         accountMccTransaction.ifPresentOrElse(
-                acc -> accountBankRepository.save(minusBalance(acc, transaction)),
-                () -> accountList
-                        .stream()
-                        .filter(acc -> "CASH".equalsIgnoreCase(acc.getMccDescription()))
-                        .findFirst()
-                        .ifPresent(acc -> accountBankRepository.save(minusBalance(acc, transaction)))
+                acc -> {
+                    if (existBalance(transaction, acc)) {
+                        minusBalance(acc, transaction);
+                    }else{
+                        accountList
+                                .stream()
+                                .filter(accountBank -> "CASH".equalsIgnoreCase(accountBank.getMccDescription()))
+                                .findFirst()
+                                .ifPresent(accountBank -> rulesUnderCash(accountBank, transaction));
+                    }
+                },
+                () -> {
+                    throw new TransactionException(CodeReturnEnum.REJECTED);
+                }
         );
     }
 
-    private AccountBank minusBalance(AccountBank accountBank, Transaction transaction) {
-        if (transaction.getTotalAmount().compareTo(accountBank.getBalance()) == 1) {
+    private void rulesUnderCash(AccountBank cash, Transaction transaction) {
+        if (!existBalance(transaction, cash)) {
             throw new TransactionException(CodeReturnEnum.REJECTED);
         }
+        minusBalance(cash, transaction);
+    }
+
+    private Boolean existBalance(Transaction transaction, AccountBank accountBank) {
+        if (transaction.getTotalAmount().compareTo(accountBank.getBalance()) == 1) {
+            return Boolean.FALSE;
+        }
+        return Boolean.TRUE;
+    }
+
+    private void minusBalance(AccountBank accountBank, Transaction transaction) {
         accountBank.setBalance(accountBank.getBalance().subtract(transaction.getTotalAmount()));
-        return accountBank;
+        accountBankRepository.save(accountBank);
     }
 
     private Boolean filterMcc(String[] mccs, String mcc) {
-        return Arrays.binarySearch(mccs, mcc) != -1 ? Boolean.TRUE : Boolean.FALSE;
+        return Arrays.binarySearch(mccs, mcc) >= 0 ? Boolean.TRUE : Boolean.FALSE;
     }
 }

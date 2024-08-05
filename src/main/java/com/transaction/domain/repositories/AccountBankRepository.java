@@ -16,4 +16,8 @@ public interface AccountBankRepository extends JpaRepository<AccountBank,UUID> {
             "Where ab.account_number =:account " +
             "AND (ab.mcc like %:mcc% or ab.mcc_description='CASH')",nativeQuery = true)
     Set<AccountBank> findByAccountNumberAndMccLike(@Param("account") String account, @Param("mcc") String mcc);
+
+    @Query(value="Select case when count(ab.mcc) > 0 then 'TRUE' else 'FALSE' end from account_bank ab " +
+            "where ab.mcc like %:mcc%",nativeQuery = true)
+    Boolean existsByMccLike(@Param("mcc")String mcc);
 }

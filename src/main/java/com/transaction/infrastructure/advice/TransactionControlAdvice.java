@@ -16,7 +16,10 @@ import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.context.request.async.AsyncRequestTimeoutException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+
+import java.util.concurrent.TimeoutException;
 
 @ControllerAdvice
 public class TransactionControlAdvice extends PatterErrorReturn {
@@ -44,6 +47,14 @@ public class TransactionControlAdvice extends PatterErrorReturn {
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<ExceptionModel> exception(NoResourceFoundException exception) {
         return buildResponse(exception.getMessage(), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler({AsyncRequestTimeoutException.class, TimeoutException.class})
+    public ResponseEntity<ExceptionModel> exceptionTime(Exception exception) {
+        return new ResponseEntity<ExceptionModel>(ExceptionModel
+                .builder()
+                .message((String)exception.getMessage())
+                .build(), HttpStatus.GATEWAY_TIMEOUT);
     }
 
     @ExceptionHandler(TransactionException.class)
