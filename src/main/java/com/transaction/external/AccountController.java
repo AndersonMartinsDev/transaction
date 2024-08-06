@@ -1,9 +1,8 @@
 package com.transaction.external;
 
 import com.transaction.application.dto.AccountBankDto;
-import com.transaction.application.mapper.AccounBankMapper;
-import com.transaction.domain.entities.AccountBank;
 import com.transaction.domain.services.AccountService;
+import com.transaction.domain.services.impl.AccountServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,7 +10,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static com.transaction.application.mapper.AccounBankMapper.*;
@@ -23,7 +21,7 @@ public class AccountController {
     private final AccountService accountBankService;
 
     @Autowired
-    public AccountController(AccountService accountBankService) {
+    public AccountController(AccountServiceImpl accountBankService) {
         this.accountBankService = accountBankService;
     }
 

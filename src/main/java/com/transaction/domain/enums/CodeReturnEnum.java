@@ -1,7 +1,5 @@
 package com.transaction.domain.enums;
 
-import java.util.Arrays;
-
 public enum CodeReturnEnum {
     APPROVED("00", "Transação Aprovada"),
     REJECTED("51", "Não possui Saldo suficiente"),

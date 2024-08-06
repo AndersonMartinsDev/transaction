@@ -54,6 +54,7 @@ public class TransactionControlAdvice extends PatterErrorReturn {
         return new ResponseEntity<ExceptionModel>(ExceptionModel
                 .builder()
                 .message((String)exception.getMessage())
+                .code("07")
                 .build(), HttpStatus.GATEWAY_TIMEOUT);
     }
 
