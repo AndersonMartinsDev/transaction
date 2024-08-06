@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-# transaction
-=======
 
 # Projeto Transações
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)  ![Static Badge](https://img.shields.io/badge/autor-Anderson-blue)
@@ -114,5 +111,3 @@ curl --location '{{suaUrl}}/account-banks' \
     }
 ]'
 ```
-
->>>>>>> c8cb248 (FEAT - Criação de testes unitários e documentação)
